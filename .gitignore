@@ -1,0 +1,12 @@
+target/
+
+### IntelliJ IDEA ###
+.idea/
+.idea/encodings.xml
+.idea/misc.xml
+*.iws
+*.iml
+*.ipr
+
+### Mac OS ###
+.DS_Store

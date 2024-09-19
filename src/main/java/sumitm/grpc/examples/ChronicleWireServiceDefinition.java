@@ -6,6 +6,7 @@ import io.grpc.ServerMethodDefinition;
 import io.grpc.ServerServiceDefinition;
 import io.grpc.stub.ServerCalls;
 import io.grpc.stub.StreamObserver;
+import net.openhft.chronicle.wire.BytesInBinaryMarshallable;
 import net.openhft.chronicle.wire.SelfDescribingMarshallable;
 
 
@@ -22,7 +23,7 @@ public final class ChronicleWireServiceDefinition {
                     .setType(MethodDescriptor.MethodType.UNARY)
                     .build();
 
-    public static final class HelloRequest extends SelfDescribingMarshallable {
+    public static final class HelloRequest extends BytesInBinaryMarshallable {
 
         private long id;
         private String message;

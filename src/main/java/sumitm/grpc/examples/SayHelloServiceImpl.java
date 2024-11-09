@@ -4,17 +4,23 @@ import io.grpc.stub.StreamObserver;
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ * A sample {@link sumitm.grpc.examples.ChronicleWireServiceDefinition.SayHelloService SayHelloService} service that simulates a delay and responds to grpc stream with simple reply
+ */
 public class SayHelloServiceImpl extends ChronicleWireServiceDefinition.SayHelloService {
 
     private static final String HI_BACK = "Hi ! back";
-    private int delay;
+    final private int delay;
 
+    /**
+     * @param delay duration in microseconds
+     */
     public SayHelloServiceImpl(int delay) {
         this.delay = delay;
     }
 
     public int getDelay() {
-        return delay;
+        return this.delay;
     }
 
     private void delay() {
@@ -29,6 +35,12 @@ public class SayHelloServiceImpl extends ChronicleWireServiceDefinition.SayHello
         }
     }
 
+    /**
+     * Implements a thread sleep delay, builds a response to send via provided grpc stream observer
+     * throws {@code RuntimeException} if interrupted during delay
+     * @param helloRequest input request
+     * @param streamObserver grpc observer
+     */
     @Override
     public void sayHello(ChronicleWireServiceDefinition.HelloRequest helloRequest,
                          StreamObserver<ChronicleWireServiceDefinition.HelloResponse> streamObserver) {

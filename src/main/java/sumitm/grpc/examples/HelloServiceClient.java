@@ -1,10 +1,7 @@
 package sumitm.grpc.examples;
 
-import io.grpc.CallOptions;
 import io.grpc.Channel;
-import io.grpc.ClientCall;
 import io.grpc.ManagedChannel;
-import io.grpc.stub.ClientCalls;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -13,7 +10,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * This grpc client makes blocking unary calls to {@link ChronicleWireServiceDefinition.SayHelloService}
+ * This grpc client makes blocking unary calls to {@link SayHelloServiceGrpc.SayHelloServiceImplBase}
  * The limiter blocks the client if max concurrent executions limit (@link permits) is reached
  */
 public class HelloServiceClient {
@@ -63,27 +60,18 @@ public class HelloServiceClient {
     private void sayHello(Channel chan)
             throws InterruptedException {
         limiter.acquire();
-        ClientCall<ChronicleWireServiceDefinition.HelloRequest, ChronicleWireServiceDefinition.HelloResponse> call =
-                chan.newCall(ChronicleWireServiceDefinition.SAY_HELLO_METHOD, CallOptions.DEFAULT);
-        ChronicleWireServiceDefinition.HelloRequest req = new ChronicleWireServiceDefinition.HelloRequest();
-        req.setMessage(HOWDY_THERE);
         long startTime = System.nanoTime();
-        req.setId(startTime);
-        ClientCalls.blockingUnaryCall(call, req);
+        HelloRequest request = HelloRequest.newBuilder()
+                .setId(startTime)
+                .setMessage(HOWDY_THERE)
+                .build();
+        SayHelloServiceGrpc.newBlockingStub(chan).sayHello(request);
         limiter.release();
         final long response_time = System.nanoTime() - startTime;
         executorService.submit(() -> {
             this.latency.getAndAccumulate(response_time, Long::sum);
             rpcCount.incrementAndGet();
         });
-//        ListenableFuture<ChronicleWireServiceDefinition.HelloResponse> res = ClientCalls.futureUnaryCall(call, req);
-//        limiter.release();
-//        res.addListener(() -> {
-//            long latency = System.nanoTime() - startTime;
-//            this.latency.getAndAccumulate(latency, Long::sum);
-//            rpcCount.incrementAndGet();
-//        }, MoreExecutors.directExecutor());
-//        return res;
     }
 
 

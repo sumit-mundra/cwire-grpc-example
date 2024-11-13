@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "sumitm.grpc.examples";
+
+service SayHelloService {
+  rpc sayHello (HelloRequest) returns (HelloResponse) {}
+}
+
+message HelloResponse {
+  int64 id = 1;
+  string reply = 2;
+}
+
+message HelloRequest {
+  int64 id = 1;
+  string message = 2;
+}

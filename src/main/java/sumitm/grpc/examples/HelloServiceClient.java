@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * This grpc client makes blocking unary calls to {@link ChronicleWireServiceDefinition.SayHelloService}
+ * This grpc client makes blocking unary calls to {@link GsonBasedServiceDefinition.SayHelloService}
  * The limiter blocks the client if max concurrent executions limit (@link permits) is reached
  */
 public class HelloServiceClient {
@@ -63,9 +63,9 @@ public class HelloServiceClient {
     private void sayHello(Channel chan)
             throws InterruptedException {
         limiter.acquire();
-        ClientCall<ChronicleWireServiceDefinition.HelloRequest, ChronicleWireServiceDefinition.HelloResponse> call =
-                chan.newCall(ChronicleWireServiceDefinition.SAY_HELLO_METHOD, CallOptions.DEFAULT);
-        ChronicleWireServiceDefinition.HelloRequest req = new ChronicleWireServiceDefinition.HelloRequest();
+        ClientCall<GsonBasedServiceDefinition.HelloRequest, GsonBasedServiceDefinition.HelloResponse> call =
+                chan.newCall(GsonBasedServiceDefinition.SAY_HELLO_METHOD, CallOptions.DEFAULT);
+        GsonBasedServiceDefinition.HelloRequest req = new GsonBasedServiceDefinition.HelloRequest();
         req.setMessage(HOWDY_THERE);
         long startTime = System.nanoTime();
         req.setId(startTime);

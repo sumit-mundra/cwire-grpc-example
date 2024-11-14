@@ -6,24 +6,22 @@ import io.grpc.ServerMethodDefinition;
 import io.grpc.ServerServiceDefinition;
 import io.grpc.stub.ServerCalls;
 import io.grpc.stub.StreamObserver;
-import net.openhft.chronicle.wire.BytesInBinaryMarshallable;
-import net.openhft.chronicle.wire.SelfDescribingMarshallable;
 
 
 /**
- * A simple demonstration for plugging chronicle wire serializer in a grpc based service
+ * A simple demonstration for plugging gson serializer in a grpc based service
  */
-public final class ChronicleWireServiceDefinition {
+public final class GsonBasedServiceDefinition {
 
     public static final MethodDescriptor<HelloRequest, HelloResponse> SAY_HELLO_METHOD =
             MethodDescriptor.newBuilder(
-                            new ChronicleWireMarshaller<>(HelloRequest.class),
-                            new ChronicleWireMarshaller<>(HelloResponse.class))
+                            new GsonMarshaller<>(HelloRequest.class),
+                            new GsonMarshaller<>(HelloResponse.class))
                     .setFullMethodName("sayHelloService/sayHello")
                     .setType(MethodDescriptor.MethodType.UNARY)
                     .build();
 
-    public static final class HelloRequest extends BytesInBinaryMarshallable {
+    public static final class HelloRequest {
 
         private long id;
         private String message;
@@ -48,7 +46,7 @@ public final class ChronicleWireServiceDefinition {
         }
     }
 
-    public static final class HelloResponse extends SelfDescribingMarshallable {
+    public static final class HelloResponse {
         private long id;
         private String reply;
 

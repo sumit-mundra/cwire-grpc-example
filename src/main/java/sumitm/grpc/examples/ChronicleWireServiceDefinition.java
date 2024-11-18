@@ -9,6 +9,8 @@ import io.grpc.stub.StreamObserver;
 import net.openhft.chronicle.wire.BytesInBinaryMarshallable;
 import net.openhft.chronicle.wire.SelfDescribingMarshallable;
 
+import java.util.List;
+
 
 /**
  * A simple demonstration for plugging chronicle wire serializer in a grpc based service
@@ -27,6 +29,15 @@ public final class ChronicleWireServiceDefinition {
 
         private long id;
         private String message;
+        public List<Long> getDummyData() {
+            return dummyData;
+        }
+
+        public void setDummyData(List<Long> dummyData) {
+            this.dummyData = dummyData;
+        }
+
+        private List<Long> dummyData;
 
         public HelloRequest() {
         }
@@ -51,6 +62,7 @@ public final class ChronicleWireServiceDefinition {
     public static final class HelloResponse extends SelfDescribingMarshallable {
         private long id;
         private String reply;
+        private List<Long> dummyPayload;
 
         public HelloResponse() {
         }
@@ -69,6 +81,14 @@ public final class ChronicleWireServiceDefinition {
 
         public void setReply(String reply) {
             this.reply = reply;
+        }
+
+        public List<Long> getDummyPayload() {
+            return dummyPayload;
+        }
+
+        public void setDummyPayload(List<Long> dummyPayload) {
+            this.dummyPayload = dummyPayload;
         }
     }
 

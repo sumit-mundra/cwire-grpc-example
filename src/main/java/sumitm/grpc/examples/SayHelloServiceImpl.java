@@ -2,6 +2,9 @@ package sumitm.grpc.examples;
 
 import io.grpc.stub.StreamObserver;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -11,6 +14,7 @@ public class SayHelloServiceImpl extends ChronicleWireServiceDefinition.SayHello
 
     private static final String HI_BACK = "Hi ! back";
     final private int delay;
+    final private Random random = new Random(10);
 
     /**
      * @param delay duration in microseconds
@@ -48,7 +52,16 @@ public class SayHelloServiceImpl extends ChronicleWireServiceDefinition.SayHello
         ChronicleWireServiceDefinition.HelloResponse res = new ChronicleWireServiceDefinition.HelloResponse();
         res.setReply(HI_BACK);
         res.setId(helloRequest.getId());
+        res.setDummyPayload(buildPayload());
         streamObserver.onNext(res);
         streamObserver.onCompleted();
+    }
+
+    private List<Long> buildPayload() {
+        List<Long> list = new ArrayList<>(1000);
+        for (int i = 0; i < 1000; i++) {
+            list.add(this.random.nextLong());
+        }
+        return list;
     }
 }

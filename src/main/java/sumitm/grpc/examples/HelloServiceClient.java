@@ -6,10 +6,12 @@ import io.grpc.ClientCall;
 import io.grpc.ManagedChannel;
 import io.grpc.stub.ClientCalls;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -23,6 +25,7 @@ public class HelloServiceClient {
     private final AtomicLong rpcCount = new AtomicLong();
     private final AtomicLong latency = new AtomicLong(0);
     private final ExecutorService executorService;
+    private final Random rand = new Random(100);
 
     public HelloServiceClient(ManagedChannel channel, int permits) {
         this.channel = channel;
@@ -45,11 +48,15 @@ public class HelloServiceClient {
     }
 
     /**
-     * @param done A boolean switch which toggles the infinite client execution
-     * @throws InterruptedException if interrupted in between
+     * Client will invoke blocking unary calls in a loop until duration is over.
+     *
+     * @param durationS duration in seconds
+     * @throws InterruptedException if the client is interrupted
      */
-    public void doClientWork(AtomicBoolean done) throws InterruptedException {
-        while (!done.get()) {
+    public void doTimedClientWork(long durationS) throws InterruptedException {
+        long start = System.nanoTime();
+        long durationUs = durationS * 1000000;
+        while (((System.nanoTime() - start) / 1000) < durationUs) {
             sayHello(channel);
         }
         close();
@@ -60,13 +67,12 @@ public class HelloServiceClient {
             this.executorService.shutdown();
     }
 
-    private void sayHello(Channel chan)
-            throws InterruptedException {
+    private void sayHello(Channel chan) throws InterruptedException {
         limiter.acquire();
-        ClientCall<ChronicleWireServiceDefinition.HelloRequest, ChronicleWireServiceDefinition.HelloResponse> call =
-                chan.newCall(ChronicleWireServiceDefinition.SAY_HELLO_METHOD, CallOptions.DEFAULT);
+        ClientCall<ChronicleWireServiceDefinition.HelloRequest, ChronicleWireServiceDefinition.HelloResponse> call = chan.newCall(ChronicleWireServiceDefinition.SAY_HELLO_METHOD, CallOptions.DEFAULT);
         ChronicleWireServiceDefinition.HelloRequest req = new ChronicleWireServiceDefinition.HelloRequest();
         req.setMessage(HOWDY_THERE);
+        req.setDummyData(buildData());
         long startTime = System.nanoTime();
         req.setId(startTime);
         ClientCalls.blockingUnaryCall(call, req);
@@ -76,14 +82,14 @@ public class HelloServiceClient {
             this.latency.getAndAccumulate(response_time, Long::sum);
             rpcCount.incrementAndGet();
         });
-//        ListenableFuture<ChronicleWireServiceDefinition.HelloResponse> res = ClientCalls.futureUnaryCall(call, req);
-//        limiter.release();
-//        res.addListener(() -> {
-//            long latency = System.nanoTime() - startTime;
-//            this.latency.getAndAccumulate(latency, Long::sum);
-//            rpcCount.incrementAndGet();
-//        }, MoreExecutors.directExecutor());
-//        return res;
+    }
+
+    private List<Long> buildData() {
+        List<Long> list = new ArrayList<>(1000);
+        for (int i = 0; i < 1000; i++) {
+            list.add(rand.nextLong());
+        }
+        return list;
     }
 
 

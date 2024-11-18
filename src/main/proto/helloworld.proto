@@ -10,9 +10,11 @@ service SayHelloService {
 message HelloResponse {
   int64 id = 1;
   string reply = 2;
+  repeated int64 dummyPayload = 3;
 }
 
 message HelloRequest {
   int64 id = 1;
   string message = 2;
+  repeated int64 dummydata = 3;
 }

@@ -3,10 +3,10 @@ package sumitm.grpc.examples;
 import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -20,6 +20,7 @@ public class HelloServiceClient {
     private final AtomicLong rpcCount = new AtomicLong();
     private final AtomicLong latency = new AtomicLong(0);
     private final ExecutorService executorService;
+    private final Random rand = new Random(100);
 
     public HelloServiceClient(ManagedChannel channel, int permits) {
         this.channel = channel;
@@ -42,11 +43,15 @@ public class HelloServiceClient {
     }
 
     /**
-     * @param done A boolean switch which toggles the infinite client execution
-     * @throws InterruptedException if interrupted in between
+     * Client will invoke blocking unary calls in a loop until duration is over.
+     *
+     * @param durationS duration in seconds
+     * @throws InterruptedException if the client is interrupted
      */
-    public void doClientWork(AtomicBoolean done) throws InterruptedException {
-        while (!done.get()) {
+    public void doTimedClientWork(long durationS) throws InterruptedException {
+        long start = System.nanoTime();
+        long durationUs = durationS * 1000000;
+        while (((System.nanoTime() - start) / 1000) < durationUs) {
             sayHello(channel);
         }
         close();
@@ -61,17 +66,24 @@ public class HelloServiceClient {
             throws InterruptedException {
         limiter.acquire();
         long startTime = System.nanoTime();
-        HelloRequest request = HelloRequest.newBuilder()
+        HelloRequest.Builder requestBuilder = HelloRequest.newBuilder()
                 .setId(startTime)
-                .setMessage(HOWDY_THERE)
-                .build();
-        SayHelloServiceGrpc.newBlockingStub(chan).sayHello(request);
+                .setMessage(HOWDY_THERE);
+        buildData(requestBuilder);
+
+        SayHelloServiceGrpc.newBlockingStub(chan).sayHello(requestBuilder.build());
         limiter.release();
         final long response_time = System.nanoTime() - startTime;
         executorService.submit(() -> {
             this.latency.getAndAccumulate(response_time, Long::sum);
             rpcCount.incrementAndGet();
         });
+    }
+
+    private void buildData(HelloRequest.Builder builder) {
+        for (int i = 0; i < 1000; i++) {
+            builder.addDummydata(rand.nextLong());
+        }
     }
 
 

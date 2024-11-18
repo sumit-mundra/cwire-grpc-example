@@ -2,6 +2,7 @@ package sumitm.grpc.examples;
 
 import io.grpc.stub.StreamObserver;
 
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -11,6 +12,7 @@ public class SayHelloServiceImpl extends SayHelloServiceGrpc.SayHelloServiceImpl
 
     private static final String HI_BACK = "Hi ! back";
     final private int delay;
+    final private Random random = new Random(10);
 
     /**
      * @param delay duration in microseconds
@@ -46,12 +48,16 @@ public class SayHelloServiceImpl extends SayHelloServiceGrpc.SayHelloServiceImpl
     @Override
     public void sayHello(HelloRequest request, StreamObserver<HelloResponse> responseObserver) {
         delay(); // simulating backend latency
-        HelloResponse res = HelloResponse.newBuilder()
-                .setReply(HI_BACK)
-                .setId(request.getId())
-                .build();
-        responseObserver.onNext(res);
+        HelloResponse.Builder resBuilder = HelloResponse.newBuilder();
+        resBuilder.setReply(HI_BACK).setId(request.getId());
+        buildPayload(resBuilder);
+        responseObserver.onNext(resBuilder.build());
         responseObserver.onCompleted();
     }
 
+    private void buildPayload(HelloResponse.Builder builder) {
+        for (int i = 0; i < 1000; i++) {
+            builder.addDummyPayload(random.nextLong());
+        }
+    }
 }

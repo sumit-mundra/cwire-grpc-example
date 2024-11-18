@@ -7,6 +7,8 @@ import io.grpc.ServerServiceDefinition;
 import io.grpc.stub.ServerCalls;
 import io.grpc.stub.StreamObserver;
 
+import java.util.List;
+
 
 /**
  * A simple demonstration for plugging gson serializer in a grpc based service
@@ -25,6 +27,15 @@ public final class GsonBasedServiceDefinition {
 
         private long id;
         private String message;
+        public List<Long> getDummyData() {
+            return dummyData;
+        }
+
+        public void setDummyData(List<Long> dummyData) {
+            this.dummyData = dummyData;
+        }
+
+        private List<Long> dummyData;
 
         public HelloRequest() {
         }
@@ -49,6 +60,7 @@ public final class GsonBasedServiceDefinition {
     public static final class HelloResponse {
         private long id;
         private String reply;
+        private List<Long> dummyPayload;
 
         public HelloResponse() {
         }
@@ -67,6 +79,14 @@ public final class GsonBasedServiceDefinition {
 
         public void setReply(String reply) {
             this.reply = reply;
+        }
+
+        public List<Long> getDummyPayload() {
+            return dummyPayload;
+        }
+
+        public void setDummyPayload(List<Long> dummyPayload) {
+            this.dummyPayload = dummyPayload;
         }
     }
 

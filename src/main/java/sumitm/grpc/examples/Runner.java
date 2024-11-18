@@ -8,10 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * This Runner simulates a grpc server and grpc client with serialization library as chronicle wire
@@ -27,23 +25,7 @@ public final class Runner {
     public static void main(String[] args) throws Exception {
         System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%6$s%n");
 //        System.setProperty("java.util.logging.SimpleFormatter.format", "%1$tF %1$TT.%1$tL %4$s %2$s: %5$s%6$s%n");
-        int[][] inputData = new int[][]{
-                {1, 0},
-                {10, 0},
-                {100, 0},
-                {1, 1},
-                {10, 1},
-                {100, 1},
-                {1, 10},
-                {10, 10},
-                {100, 10},
-                {1, 100},
-                {10, 100},
-                {100, 100},
-                {1, 1000},
-                {10, 1000},
-                {100, 1000},
-        };
+        int[][] inputData = new int[][]{{1, 0}, {1, 0}, {1, 0}, {100, 0}, {500, 0}, {1000, 0}, {1, 100}, {100, 100}, {500, 100}, {1000, 100}, {1, 1000}, {100, 1000}, {500, 1000}, {1000, 1000},};
         logger.info("Started");
         logger.info("Clients, RPCs, RPCs/s, sum(us), avg(us), simulated_delay(us), delta(us)");
         for (int[] input : inputData) {
@@ -61,9 +43,7 @@ public final class Runner {
         if (server != null) {
             throw new IllegalStateException("Already started");
         }
-        server = ServerBuilder.forPort(0)
-                .addService(new SayHelloServiceImpl(delay))
-                .build();
+        server = ServerBuilder.forPort(0).addService(new SayHelloServiceImpl(delay)).build();
         server.start();
     }
 
@@ -87,27 +67,20 @@ public final class Runner {
         if (channel != null) {
             throw new IllegalStateException("Already started");
         }
-        channel = ManagedChannelBuilder.forTarget("dns:///localhost:" + server.getPort()).usePlaintext().build();
-        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        ExecutorService executor = Executors.newCachedThreadPool();
+        channel = ManagedChannelBuilder.forTarget("dns:///localhost:" + server.getPort()).usePlaintext().executor(executor).build();
         try {
-            AtomicBoolean done = new AtomicBoolean();
             HelloServiceClient client = new HelloServiceClient(channel, permit);
-            scheduler.schedule(() -> done.set(true), DURATION_SECONDS, TimeUnit.SECONDS);
-            client.doClientWork(done);
+            client.doTimedClientWork(DURATION_SECONDS);
             long rpcCount = client.getRpcCount().get();
             double qps = (double) rpcCount / DURATION_SECONDS;
             long totalServerTime = client.getLatency().get();
-            logger.info("{}, {}, {}, {}, {}, {}, {}",
-                    String.format("%4d", permit),
-                    String.format("%6d", rpcCount),
-                    String.format("%8.2f", qps),
-                    String.format("%11.2f", totalServerTime / 1000f),
-                    String.format("%8.2f", (double) totalServerTime / (rpcCount * 1000)),
-                    String.format("%4d", serverDelay),
-                    String.format("%8.2f", (totalServerTime / 1000f - rpcCount * serverDelay) / rpcCount));
+            logger.info("{}, {}, {}, {}, {}, {}, {}", String.format("%4d", permit), String.format("%6d", rpcCount), String.format("%8.2f", qps), String.format("%11.2f", totalServerTime / 1000f), String.format("%8.2f", (double) totalServerTime / (rpcCount * 1000)), String.format("%4d", serverDelay), String.format("%8.2f", (totalServerTime / 1000f - rpcCount * serverDelay) / rpcCount));
         } finally {
-            scheduler.shutdown();
             channel.shutdown();
+            if (!executor.isShutdown()) {
+                executor.shutdown();
+            }
         }
     }
 }

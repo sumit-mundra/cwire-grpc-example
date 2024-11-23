@@ -1,12 +1,13 @@
 package sumitm.grpc.examples;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -25,7 +26,7 @@ public class HelloServiceClient {
     public HelloServiceClient(ManagedChannel channel, int permits) {
         this.channel = channel;
         this.limiter = new Semaphore(permits);
-        this.executorService = Executors.newFixedThreadPool(100);
+        this.executorService = Executors.newCachedThreadPool();
     }
 
     /**
@@ -48,11 +49,15 @@ public class HelloServiceClient {
      * @param durationS duration in seconds
      * @throws InterruptedException if the client is interrupted
      */
-    public void doTimedClientWork(long durationS) throws InterruptedException {
+    public void doTimedClientWork(long durationS) throws InterruptedException, ExecutionException {
         long start = System.nanoTime();
         long durationUs = durationS * 1000000;
+        List<ListenableFuture<HelloResponse>> list = new ArrayList<>();
         while (((System.nanoTime() - start) / 1000) < durationUs) {
-            sayHello(channel);
+            list.add(sayHello(channel));
+        }
+        for (ListenableFuture<HelloResponse> helloResponseListenableFuture : list) {
+            helloResponseListenableFuture.get();
         }
         close();
     }
@@ -62,22 +67,25 @@ public class HelloServiceClient {
             this.executorService.shutdown();
     }
 
-    private void sayHello(Channel chan)
-            throws InterruptedException {
+    private ListenableFuture<HelloResponse> sayHello(Channel chan)
+            throws InterruptedException, ExecutionException {
         limiter.acquire();
         long startTime = System.nanoTime();
         HelloRequest.Builder requestBuilder = HelloRequest.newBuilder()
-                .setId(startTime)
-                .setMessage(HOWDY_THERE);
+                                                      .setId(startTime)
+                                                      .setMessage(HOWDY_THERE);
         buildData(requestBuilder);
-
-        SayHelloServiceGrpc.newBlockingStub(chan).sayHello(requestBuilder.build());
-        limiter.release();
-        final long response_time = System.nanoTime() - startTime;
-        executorService.submit(() -> {
-            this.latency.getAndAccumulate(response_time, Long::sum);
-            rpcCount.incrementAndGet();
-        });
+//        SayHelloServiceGrpc.newBlockingStub(chan).sayHello(requestBuilder.build());
+        ListenableFuture<HelloResponse> future = SayHelloServiceGrpc.newFutureStub(chan).sayHello(requestBuilder.build());
+        future.addListener(
+                () -> {
+                    final long response_time = System.nanoTime() - startTime;
+                    this.latency.getAndAccumulate(response_time, Long::sum);
+                    rpcCount.incrementAndGet();
+                    limiter.release();
+                }, executorService
+        );
+        return future;
     }
 
     private void buildData(HelloRequest.Builder builder) {

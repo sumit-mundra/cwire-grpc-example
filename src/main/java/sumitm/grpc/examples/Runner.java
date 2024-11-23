@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -25,7 +26,25 @@ public final class Runner {
     public static void main(String[] args) throws Exception {
         System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%6$s%n");
 //        System.setProperty("java.util.logging.SimpleFormatter.format", "%1$tF %1$TT.%1$tL %4$s %2$s: %5$s%6$s%n");
-        int[][] inputData = new int[][]{{1, 0}, {1, 0}, {1, 0}, {100, 0}, {500, 0}, {1000, 0}, {1, 100}, {100, 100}, {500, 100}, {1000, 100}, {1, 1000}, {100, 1000}, {500, 1000}, {1000, 1000},};
+        int[][] inputData = new int[][]{
+                {1, 0},
+                {1, 0},
+                {1, 0},
+                {2, 0},
+                {4, 0},
+                {8, 0},
+                {10, 0},
+                {16, 0},
+                {20, 0},
+//                {1, 100},
+//                {100, 100},
+//                {500, 100},
+//                {1000, 100},
+//                {1, 1000},
+//                {100, 1000},
+//                {500, 1000},
+//                {1000, 1000},
+        };
         logger.info("Started");
         logger.info("Clients, RPCs, RPCs/s, sum(us), avg(us), simulated_delay(us), delta(us)");
         for (int[] input : inputData) {
@@ -44,8 +63,8 @@ public final class Runner {
             throw new IllegalStateException("Already started");
         }
         server = ServerBuilder.forPort(0)
-                .addService(new SayHelloServiceImpl(delay))
-                .build();
+                         .addService(new SayHelloServiceImpl(delay))
+                         .build();
         server.start();
     }
 
@@ -65,13 +84,16 @@ public final class Runner {
      * @param serverDelay The simulated delay (in us) in server side response, used here only for building analysis
      * @throws InterruptedException if interrupted during client execution
      */
-    private void runClient(int permit, int serverDelay) throws InterruptedException {
+    private void runClient(int permit, int serverDelay) throws InterruptedException, ExecutionException {
         if (channel != null) {
             throw new IllegalStateException("Already started");
         }
         ExecutorService executor = Executors.newCachedThreadPool();
-        channel = ManagedChannelBuilder.forTarget("dns:///localhost:" + server.getPort()).usePlaintext().executor(executor).build();
-        try {
+        channel = ManagedChannelBuilder.forTarget("dns:///localhost:" + server.getPort())
+                          .usePlaintext()
+                          .executor(executor)
+                          .build();
+    try {
             HelloServiceClient client = new HelloServiceClient(channel, permit);
             client.doTimedClientWork(DURATION_SECONDS);
             long rpcCount = client.getRpcCount().get();

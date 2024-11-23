@@ -1,6 +1,7 @@
 package sumitm.grpc.examples;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 
@@ -75,7 +76,6 @@ public class HelloServiceClient {
                                                       .setId(startTime)
                                                       .setMessage(HOWDY_THERE);
         buildData(requestBuilder);
-//        SayHelloServiceGrpc.newBlockingStub(chan).sayHello(requestBuilder.build());
         ListenableFuture<HelloResponse> future = SayHelloServiceGrpc.newFutureStub(chan).sayHello(requestBuilder.build());
         future.addListener(
                 () -> {
@@ -93,6 +93,4 @@ public class HelloServiceClient {
             builder.addDummydata(rand.nextLong());
         }
     }
-
-
 }
